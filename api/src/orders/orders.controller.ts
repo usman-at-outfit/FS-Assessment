@@ -6,6 +6,7 @@ import {
 import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryAdminOrdersDto } from './dto/query-admin-orders.dto';
+import { ConfirmStripeDto } from './dto/confirm-stripe.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -20,6 +21,21 @@ export class OrdersController {
   @HttpCode(HttpStatus.CREATED)
   checkout(@CurrentUser('userId') userId: number) {
     return this.ordersService.checkout(userId);
+  }
+
+  @Post('checkout/stripe-session')
+  @HttpCode(HttpStatus.CREATED)
+  createStripeSession(@CurrentUser('userId') userId: number) {
+    return this.ordersService.createStripeSession(userId);
+  }
+
+  @Post('checkout/confirm')
+  @HttpCode(HttpStatus.CREATED)
+  confirmStripe(
+    @CurrentUser('userId') userId: number,
+    @Body() dto: ConfirmStripeDto,
+  ) {
+    return this.ordersService.confirmStripeCheckout(userId, dto.sessionId);
   }
 
   @Get()
