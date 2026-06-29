@@ -1,10 +1,11 @@
 import {
   Controller, Get, Post, Patch,
-  Param, ParseIntPipe, Body,
+  Param, ParseIntPipe, Body, Query,
   UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { QueryAdminOrdersDto } from './dto/query-admin-orders.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -24,6 +25,22 @@ export class OrdersController {
   @Get()
   findAll(@CurrentUser('userId') userId: number) {
     return this.ordersService.findAll(userId);
+  }
+
+  // ─── Admin endpoints (must be declared before :id to avoid pattern shadowing) ───
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  findAllAdmin(@Query() q: QueryAdminOrdersDto) {
+    return this.ordersService.findAllAdmin(q);
+  }
+
+  @Get('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  findOneAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.findOneAdmin(id);
   }
 
   @Get(':id')

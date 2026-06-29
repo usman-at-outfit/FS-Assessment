@@ -4,9 +4,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
+import { QueryAdminOrdersDto } from './dto/query-admin-orders.dto';
 
 // PENDING → PROCESSING → SHIPPED → DELIVERED.  PENDING|PROCESSING → CANCELLED.
-const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+export const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PENDING:    ['PROCESSING', 'CANCELLED'],
   PROCESSING: ['SHIPPED',    'CANCELLED'],
   SHIPPED:    ['DELIVERED'],
@@ -106,6 +107,41 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       include: ORDER_INCLUDE,
     });
+  }
+
+  async findAllAdmin(q: QueryAdminOrdersDto) {
+    const page     = q.page     ?? 1;
+    const pageSize = q.pageSize ?? 20;
+    const skip     = (page - 1) * pageSize;
+    const where    = q.status ? { status: q.status } : {};
+
+    const [items, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          ...ORDER_INCLUDE,
+          user: { select: { id: true, email: true } },
+        },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize };
+  }
+
+  async findOneAdmin(orderId: number) {
+    const order = await this.prisma.order.findUnique({
+      where:   { id: orderId },
+      include: {
+        ...ORDER_INCLUDE,
+        user: { select: { id: true, email: true } },
+      },
+    });
+    if (!order) throw new NotFoundException(`Order #${orderId} not found`);
+    return order;
   }
 
   async findOne(userId: number, orderId: number) {

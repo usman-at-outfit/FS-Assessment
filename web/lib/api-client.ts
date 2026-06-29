@@ -80,6 +80,17 @@ export interface Order {
   items:      OrderItem[];
 }
 
+export interface AdminOrder extends Order {
+  user: { id: number; email: string };
+}
+
+export interface AdminOrderListResponse {
+  items:    AdminOrder[];
+  total:    number;
+  page:     number;
+  pageSize: number;
+}
+
 // ─── Request helper ───────────────────────────────────────────────────────────
 
 async function request<T>(
