@@ -10,7 +10,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
-const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
 
 /** Derive extension from the mime type (not from originalname — attacker-controlled). */
 const MIME_TO_EXT: Record<string, string> = {
@@ -18,6 +18,7 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/png':  '.png',
   'image/webp': '.webp',
   'image/gif':  '.gif',
+  'image/avif': '.avif',
 };
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Delete, Body,
-  Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus,
+  Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus, ForbiddenException,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { UpsertCartItemDto } from './dto/upsert-cart-item.dto';
@@ -13,24 +13,27 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Get()
-  getCart(@CurrentUser('userId') userId: number) {
-    return this.cartService.getCart(userId);
+  getCart(@CurrentUser() user: { userId: number; role: string }) {
+    if (user.role === 'ADMIN') throw new ForbiddenException('Admins cannot use the cart');
+    return this.cartService.getCart(user.userId);
   }
 
   @Post('items')
   upsertItem(
-    @CurrentUser('userId') userId: number,
+    @CurrentUser() user: { userId: number; role: string },
     @Body() dto: UpsertCartItemDto,
   ) {
-    return this.cartService.upsertItem(userId, dto);
+    if (user.role === 'ADMIN') throw new ForbiddenException('Admins cannot use the cart');
+    return this.cartService.upsertItem(user.userId, dto);
   }
 
   @Delete('items/:productId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeItem(
-    @CurrentUser('userId') userId: number,
+    @CurrentUser() user: { userId: number; role: string },
     @Param('productId', ParseIntPipe) productId: number,
   ) {
-    return this.cartService.removeItem(userId, productId);
+    if (user.role === 'ADMIN') throw new ForbiddenException('Admins cannot use the cart');
+    return this.cartService.removeItem(user.userId, productId);
   }
 }

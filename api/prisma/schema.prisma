@@ -31,11 +31,13 @@ enum OrderStatus {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  passwordHash     String
+  role             Role      @default(CUSTOMER)
+  createdAt        DateTime  @default(now())
+  loggedOutAt      DateTime?
+  refreshTokenHash String?
 
   cart   Cart?
   orders Order[]
@@ -120,4 +122,11 @@ model OrderItem {
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])
+}
+
+/// Generic key-value store for site-wide settings (e.g. bannerImageUrl).
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

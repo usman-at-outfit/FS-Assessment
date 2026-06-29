@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/cart-context';
 import { useAuth } from '@/contexts/auth-context';
-import { formatCents } from '@/lib/api-client';
+import { formatCents, pickThumb } from '@/lib/api-client';
 import { SHIPPING_CENTS, FREE_SHIP_THRESHOLD } from '@/lib/constants';
 
 export default function CartPage() {
@@ -53,7 +53,7 @@ export default function CartPage() {
               <div key={item.id} style={{ display: 'flex', gap: '14px', alignItems: 'center', padding: '16px', borderBottom: '1px solid rgba(58,58,44,0.06)' }}>
                 <div style={{ width: '66px', height: '66px', borderRadius: '8px', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.product.imageUrl} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={pickThumb(item.product)} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '17px', fontWeight: 500, color: '#3A3A2C' }}>{item.product.name}</div>

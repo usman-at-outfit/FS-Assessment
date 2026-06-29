@@ -66,7 +66,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside style={{ width: '224px', flexShrink: 0, background: '#EFEDE1', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 40, borderRight: '1px solid rgba(58,58,44,0.12)' }}>
         {/* Brand */}
-        <div style={{ padding: '22px 20px 16px' }}>
+        <div
+          onClick={() => router.push('/')}
+          style={{ padding: '22px 20px 16px', cursor: 'pointer' }}
+        >
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', fontWeight: 600, color: '#3A3A2C', letterSpacing: '-0.01em' }}>Sundry</div>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '9px', letterSpacing: '0.14em', color: '#8A8676', marginTop: '2px' }}>ADMIN CONSOLE</div>
         </div>
@@ -100,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {initials}
             </div>
             <button
-              onClick={() => { logout(); router.push('/login'); }}
+              onClick={async () => { await logout(); router.push('/'); }}
               style={{ fontSize: '13px', fontWeight: 600, color: '#6B6857', background: 'transparent', border: '1px solid rgba(58,58,44,0.16)', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer' }}
             >
               Sign out

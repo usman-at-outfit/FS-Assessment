@@ -1,5 +1,5 @@
 import {
-  IsString, IsInt, Min, IsOptional, IsArray, IsUrl, IsNotEmpty, MaxLength,
+  IsString, IsInt, Min, IsOptional, IsArray, IsNotEmpty, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -42,6 +42,6 @@ export class UpdateProductDto {
    */
   @IsOptional()
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsString({ each: true })
   imageUrls?: string[];
 }

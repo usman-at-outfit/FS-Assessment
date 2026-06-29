@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, Product, Category, formatCents } from '@/lib/api-client';
+import { api, Product, Category, formatCents, pickThumb } from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { useCart } from '@/contexts/cart-context';
 
@@ -15,6 +15,18 @@ function AddButton({ product }: { product: Product }) {
   const router      = useRouter();
   const [adding, setAdding] = useState(false);
   const [added,  setAdded]  = useState(false);
+
+  if (user?.role === 'ADMIN') {
+    return (
+      <a href={`/admin/products`} style={{
+        fontSize: '13px', fontWeight: 600, padding: '7px 14px', borderRadius: '6px',
+        color: '#43432B', background: '#EFEDE1', border: '1px solid rgba(67,67,43,0.20)',
+        textDecoration: 'none', display: 'inline-block',
+      }}>
+        Edit ↗
+      </a>
+    );
+  }
 
   async function handle(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
@@ -60,6 +72,14 @@ function CatalogInner() {
   const [sort,     setSort]     = useState(searchParams.get('sort')     ?? 'newest');
   const [maxPrice, setMaxPrice] = useState(Number(searchParams.get('maxPrice') ?? 15000));
   const [page,     setPage]     = useState(Number(searchParams.get('page') ?? 1));
+
+  // Sync URL params → state so navbar links like /catalog?category=kitchen work
+  useEffect(() => {
+    setCategory(searchParams.get('category') ?? '');
+    setSearch(searchParams.get('search')     ?? '');
+    setSort(searchParams.get('sort')         ?? 'newest');
+    setPage(Number(searchParams.get('page')  ?? 1));
+  }, [searchParams]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -178,9 +198,9 @@ function CatalogInner() {
           {products.map(p => (
             <div key={p.id} style={{ border: '1px solid rgba(58,58,44,0.10)', borderRadius: '12px', padding: '12px', background: '#FFFFFF', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
               <Link href={`/products/${p.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                <div style={{ position: 'relative', height: '170px', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)' }}>
+                <div style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={pickThumb(p)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
                 </div>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.12em', color: '#8A8676', margin: '13px 0 4px' }}>
                   {p.category.name.toUpperCase()}

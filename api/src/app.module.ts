@@ -7,6 +7,7 @@ import { OrdersModule } from './orders/orders.module';
 import { SuggestionsModule } from './suggestions/suggestions.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AdminModule } from './admin/admin.module';
+import { SettingsModule } from './settings/settings.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { HealthController } from './health/health.controller';
     SuggestionsModule,
     UploadsModule,
     AdminModule,
+    SettingsModule,
   ],
   controllers: [HealthController],
 })

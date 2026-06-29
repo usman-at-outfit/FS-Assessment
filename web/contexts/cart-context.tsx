@@ -25,7 +25,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!token) { setCart(null); return; }
+    if (!token || user?.role === 'ADMIN') { setCart(null); return; }
     try {
       setLoading(true);
       const c = await api.withToken(token).get<CartResponse>('/cart');
@@ -35,7 +35,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, user?.role]);
 
   // Reload cart whenever auth changes
   useEffect(() => {

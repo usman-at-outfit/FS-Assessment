@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Patch,
   Param, ParseIntPipe, Body, Query,
-  UseGuards, HttpCode, HttpStatus,
+  UseGuards, HttpCode, HttpStatus, ForbiddenException,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -19,28 +19,32 @@ export class OrdersController {
 
   @Post('checkout')
   @HttpCode(HttpStatus.CREATED)
-  checkout(@CurrentUser('userId') userId: number) {
-    return this.ordersService.checkout(userId);
+  checkout(@CurrentUser() u: { userId: number; role: string }) {
+    if (u.role === 'ADMIN') throw new ForbiddenException('Admins cannot place orders');
+    return this.ordersService.checkout(u.userId);
   }
 
   @Post('checkout/stripe-session')
   @HttpCode(HttpStatus.CREATED)
-  createStripeSession(@CurrentUser('userId') userId: number) {
-    return this.ordersService.createStripeSession(userId);
+  createStripeSession(@CurrentUser() u: { userId: number; role: string }) {
+    if (u.role === 'ADMIN') throw new ForbiddenException('Admins cannot place orders');
+    return this.ordersService.createStripeSession(u.userId);
   }
 
   @Post('checkout/confirm')
   @HttpCode(HttpStatus.CREATED)
   confirmStripe(
-    @CurrentUser('userId') userId: number,
+    @CurrentUser() u: { userId: number; role: string },
     @Body() dto: ConfirmStripeDto,
   ) {
-    return this.ordersService.confirmStripeCheckout(userId, dto.sessionId);
+    if (u.role === 'ADMIN') throw new ForbiddenException('Admins cannot place orders');
+    return this.ordersService.confirmStripeCheckout(u.userId, dto.sessionId);
   }
 
   @Get()
-  findAll(@CurrentUser('userId') userId: number) {
-    return this.ordersService.findAll(userId);
+  findAll(@CurrentUser() u: { userId: number; role: string }) {
+    if (u.role === 'ADMIN') throw new ForbiddenException('Admins cannot place orders');
+    return this.ordersService.findAll(u.userId);
   }
 
   // ─── Admin endpoints (must be declared before :id to avoid pattern shadowing) ───
@@ -61,10 +65,11 @@ export class OrdersController {
 
   @Get(':id')
   findOne(
-    @CurrentUser('userId') userId: number,
+    @CurrentUser() u: { userId: number; role: string },
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.ordersService.findOne(userId, id);
+    if (u.role === 'ADMIN') throw new ForbiddenException('Admins cannot access customer orders');
+    return this.ordersService.findOne(u.userId, id);
   }
 
   // Explicit guard order: JWT authentication must pass before role check

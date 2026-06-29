@@ -1,11 +1,21 @@
 import Link from 'next/link';
-import { api, Product, formatCents } from '@/lib/api-client';
+import { api, Product, formatCents, pickThumb } from '@/lib/api-client';
 import { HomeAddToCart } from '@/components/home-add-to-cart';
+import { HeroSlider } from '@/components/hero-slider';
 
 async function getBestsellers(): Promise<Product[]> {
   try {
     const res = await api.products.list({ pageSize: 4, sort: 'newest' });
     return res.items;
+  } catch {
+    return [];
+  }
+}
+
+async function getBannerImages(): Promise<string[]> {
+  try {
+    const res = await api.get<{ images: string[] }>('/settings/banner');
+    return res.images ?? [];
   } catch {
     return [];
   }
@@ -18,7 +28,7 @@ const CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const bestsellers = await getBestsellers();
+  const [bestsellers, bannerImages] = await Promise.all([getBestsellers(), getBannerImages()]);
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -29,6 +39,8 @@ export default async function HomePage() {
         height: 'clamp(380px,46vw,520px)',
         display: 'flex', alignItems: 'center',
       }}>
+        {/* Banner slider (behind overlay) */}
+        <HeroSlider images={bannerImages} />
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(90deg, rgba(28,28,18,.62) 0%, rgba(28,28,18,.30) 48%, rgba(28,28,18,0) 72%)',
@@ -109,9 +121,9 @@ export default async function HomePage() {
               style={{ border: '1px solid rgba(58,58,44,0.10)', borderRadius: '12px', padding: '12px', background: '#FFFFFF', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}
             >
               <Link href={`/products/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div style={{ height: '150px', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={pickThumb(product)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
                 </div>
                 <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 500, marginTop: '11px', color: '#3A3A2C' }}>{product.name}</div>
               </Link>

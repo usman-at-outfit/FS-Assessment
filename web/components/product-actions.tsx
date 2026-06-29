@@ -14,6 +14,19 @@ export function ProductActions({ product }: { product: Product }) {
   const [adding,  setAdding]  = useState(false);
   const [added,   setAdded]   = useState(false);
 
+  if (user?.role === 'ADMIN') {
+    return (
+      <a href={`/admin/products`} style={{
+        display: 'inline-flex', alignItems: 'center', gap: '8px',
+        fontSize: '15px', fontWeight: 600, padding: '13px 24px', borderRadius: '6px',
+        color: '#43432B', background: '#EFEDE1', border: '1px solid rgba(67,67,43,0.20)',
+        textDecoration: 'none',
+      }}>
+        ✏️ Manage this product in Admin panel ↗
+      </a>
+    );
+  }
+
   if (product.stock === 0) {
     return (
       <div style={{ background: '#F6E0DD', border: '1px solid #EFCBC6', color: '#8A241A', fontSize: '14px', fontWeight: 600, padding: '14px 16px', borderRadius: '8px' }}>

@@ -7,6 +7,7 @@ interface JwtPayload {
   sub:   number;
   email: string;
   role:  string;
+  iat:   number; // seconds since epoch — set automatically by JwtService.sign()
 }
 
 @Injectable()
@@ -20,10 +21,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    // Re-fetch to guard against deleted/disabled accounts.
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException();
-    // Return value is attached to req.user
+
+    // Reject tokens issued before the last logout (server-side invalidation).
+    // Compare in whole seconds: iat is already seconds; loggedOutAt is truncated to seconds.
+    // This avoids a race where login + logout happen in the same second and the new token
+    // gets incorrectly rejected because iat*1000 < loggedOutAt (milliseconds).
+    if (user.loggedOutAt && payload.iat < Math.floor(user.loggedOutAt.getTime() / 1000)) {
+      throw new UnauthorizedException('Session expired — please log in again');
+    }
+
     return { userId: user.id, email: user.email, role: user.role };
   }
 }

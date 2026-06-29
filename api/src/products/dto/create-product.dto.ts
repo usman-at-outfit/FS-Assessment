@@ -1,5 +1,5 @@
 import {
-  IsString, IsNotEmpty, IsInt, Min, IsOptional, IsArray, IsUrl, MaxLength,
+  IsString, IsNotEmpty, IsInt, Min, IsOptional, IsArray, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -37,6 +37,6 @@ export class CreateProductDto {
    */
   @IsOptional()
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsString({ each: true })
   imageUrls?: string[];
 }

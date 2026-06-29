@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -30,6 +30,124 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED:  '#2E7D52',
   CANCELLED:  '#A82E22',
 };
+
+// ─── Banner manager ───────────────────────────────────────────────────────────
+
+function BannerManager({ token }: { token: string }) {
+  const [images,    setImages]    = useState<string[]>([]);
+  const [fetching,  setFetching]  = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [msg,       setMsg]       = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api.get<{ images: string[] }>('/settings/banner')
+      .then(r => setImages(r.images ?? []))
+      .catch(() => {})
+      .finally(() => setFetching(false));
+  }, []);
+
+  async function save(updated: string[]) {
+    await api.withToken(token).put('/settings/banner', { images: updated });
+    setImages(updated);
+  }
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploading(true);
+    setMsg('');
+    try {
+      const form = new FormData();
+      files.forEach(f => form.append('files', f));
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/uploads`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body:    form,
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      const uploaded: { url: string }[] = await res.json();
+      const newUrls = uploaded.map(u => u.url);
+      const updated = [...images, ...newUrls];
+      await save(updated);
+      setMsg(`${newUrls.length} image${newUrls.length > 1 ? 's' : ''} added`);
+    } catch (err: unknown) {
+      setMsg(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  async function removeImage(idx: number) {
+    const updated = images.filter((_, i) => i !== idx);
+    try {
+      await save(updated);
+      setMsg('Removed');
+    } catch {
+      setMsg('Remove failed');
+    }
+  }
+
+  const isError = msg.toLowerCase().includes('fail');
+
+  return (
+    <div style={{ background: '#FFFFFF', border: '1px solid rgba(58,58,44,0.10)', borderRadius: '10px', marginBottom: '28px', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(58,58,44,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.10em', color: '#8A8676', textTransform: 'uppercase', marginBottom: '2px' }}>
+            Hero banner slider
+          </div>
+          <div style={{ fontSize: '13px', color: '#6B6857' }}>
+            {images.length === 0 ? 'No images — default gradient shown' : `${images.length} image${images.length > 1 ? 's' : ''} · auto-slides on storefront`}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {msg && <span style={{ fontSize: '12px', fontWeight: 600, color: isError ? '#A82E22' : '#2E7D52' }}>{msg}</span>}
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={handleFiles} />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading || fetching}
+            style={{ fontSize: '13px', fontWeight: 600, padding: '8px 16px', borderRadius: '6px', background: '#43432B', color: '#FAF6EC', border: 'none', cursor: (uploading || fetching) ? 'not-allowed' : 'pointer', opacity: (uploading || fetching) ? 0.6 : 1 }}
+          >
+            {uploading ? 'Uploading…' : '+ Add images'}
+          </button>
+        </div>
+      </div>
+
+      {/* Thumbnails grid */}
+      {!fetching && (
+        images.length > 0 ? (
+          <div style={{ padding: '16px 20px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {images.map((url, idx) => (
+              <div key={idx} style={{ position: 'relative', width: '160px', height: '100px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(58,58,44,0.12)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Banner ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {/* Slide number */}
+                <div style={{ position: 'absolute', top: '6px', left: '7px', background: 'rgba(0,0,0,0.50)', color: '#FFF', fontSize: '10px', fontFamily: "'Space Mono', monospace", padding: '2px 6px', borderRadius: '4px' }}>
+                  {idx + 1}
+                </div>
+                {/* Remove button */}
+                <button
+                  onClick={() => removeImage(idx)}
+                  title="Remove"
+                  style={{ position: 'absolute', top: '5px', right: '5px', width: '22px', height: '22px', borderRadius: '50%', border: 'none', background: 'rgba(168,46,34,0.85)', color: '#FFF', fontSize: '12px', lineHeight: '22px', textAlign: 'center', cursor: 'pointer', padding: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(120deg,#d8d3bf,#b9bc92)' }}>
+            <span style={{ fontSize: '13px', color: 'rgba(58,58,44,0.55)' }}>Upload images to activate the slider</span>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
@@ -85,6 +203,9 @@ export default function AdminDashboardPage() {
 
   return (
     <>
+      {/* Banner manager */}
+      {token && <BannerManager token={token} />}
+
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
         <StatCard label="Total revenue" value={formatCents(stats.totalSalesCents)} mono />

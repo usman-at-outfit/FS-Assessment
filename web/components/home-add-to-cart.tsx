@@ -28,6 +28,18 @@ export function HomeAddToCart({ product }: { product: Product }) {
     }
   }
 
+  if (user?.role === 'ADMIN') {
+    return (
+      <a href="/admin/products" style={{
+        fontSize: '13px', fontWeight: 600, padding: '7px 14px', borderRadius: '6px',
+        color: '#43432B', background: '#EFEDE1', border: '1px solid rgba(67,67,43,0.20)',
+        textDecoration: 'none', display: 'inline-block',
+      }}>
+        Edit products ↗
+      </a>
+    );
+  }
+
   const outOfStock = product.stock === 0;
   const label = outOfStock ? 'Out of stock' : adding ? 'Adding…' : added ? 'Added ✓' : 'Add to cart';
 

@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
 
 @theme {
   --color-brand:       #43432B;
@@ -41,4 +41,15 @@ input, select, button, textarea {
 
 button {
   transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+.ticker-track {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 22s linear infinite;
 }
