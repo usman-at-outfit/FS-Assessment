@@ -8,53 +8,156 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Credentials ──────────────────────────────────────────────────────────────
 
-const ADMIN_EMAIL = 'admin@ecomm.dev';
-const ADMIN_PASS  = 'Admin1234!';
-
-const CUSTOMER_EMAIL = 'customer@ecomm.dev';
+const ADMIN_EMAIL    = 'admin@sundry.dev';
+const ADMIN_PASS     = 'Admin1234!';
+const CUSTOMER_EMAIL = 'customer@sundry.dev';
 const CUSTOMER_PASS  = 'Customer1234!';
 
+// ─── Categories ───────────────────────────────────────────────────────────────
+
 const CATEGORIES = [
-  { name: 'Electronics',    slug: 'electronics'    },
-  { name: 'Clothing',       slug: 'clothing'       },
-  { name: 'Books',          slug: 'books'          },
-  { name: 'Home & Garden',  slug: 'home-garden'    },
+  { name: 'Kitchen',    slug: 'kitchen'    },
+  { name: 'Bath',       slug: 'bath'       },
+  { name: 'Body',       slug: 'body'       },
+  { name: 'On the Go',  slug: 'on-the-go'  },
 ];
 
-// priceCents = price in whole cents (e.g. 2999 = $29.99)
+// ─── Products ─────────────────────────────────────────────────────────────────
+// priceCents: price in integer cents (e.g. 2499 = $24.99). Never floats.
+
 const PRODUCTS = [
-  // Electronics
-  { name: 'Wireless Headphones',    description: 'Over-ear noise-cancelling Bluetooth headphones.',      priceCents:  9999, imageUrl: 'https://placehold.co/400x400?text=Headphones',      stock: 25, categorySlug: 'electronics' },
-  { name: 'USB-C Hub 7-in-1',       description: 'Multiport hub with HDMI, USB-A, SD card slot.',       priceCents:  3499, imageUrl: 'https://placehold.co/400x400?text=USB-Hub',          stock: 40, categorySlug: 'electronics' },
-  { name: 'Mechanical Keyboard',    description: 'TKL keyboard with Cherry MX Brown switches.',          priceCents:  7999, imageUrl: 'https://placehold.co/400x400?text=Keyboard',         stock: 15, categorySlug: 'electronics' },
-  { name: 'Webcam 1080p',           description: 'HD webcam with built-in microphone and autofocus.',    priceCents:  5499, imageUrl: 'https://placehold.co/400x400?text=Webcam',           stock: 20, categorySlug: 'electronics' },
-  { name: 'LED Desk Lamp',          description: 'Dimmable touch lamp with USB charging port.',          priceCents:  2999, imageUrl: 'https://placehold.co/400x400?text=Desk+Lamp',        stock: 35, categorySlug: 'electronics' },
-  // Clothing
-  { name: 'Classic Crew-Neck Tee',  description: '100% organic cotton unisex T-shirt.',                 priceCents:  1999, imageUrl: 'https://placehold.co/400x400?text=T-Shirt',          stock: 80, categorySlug: 'clothing' },
-  { name: 'Slim-Fit Chinos',        description: 'Stretch-blend chinos in mid-grey.',                    priceCents:  4999, imageUrl: 'https://placehold.co/400x400?text=Chinos',           stock: 45, categorySlug: 'clothing' },
-  { name: 'Hooded Sweatshirt',      description: 'Midweight fleece hoodie with kangaroo pocket.',        priceCents:  5999, imageUrl: 'https://placehold.co/400x400?text=Hoodie',           stock: 60, categorySlug: 'clothing' },
-  { name: 'Running Jacket',         description: 'Lightweight water-resistant jacket with reflectors.',  priceCents:  8499, imageUrl: 'https://placehold.co/400x400?text=Jacket',           stock: 30, categorySlug: 'clothing' },
-  { name: 'Wool Beanie',            description: 'Ribbed-knit merino wool beanie, one size.',            priceCents:  1499, imageUrl: 'https://placehold.co/400x400?text=Beanie',           stock: 100, categorySlug: 'clothing' },
-  // Books
-  { name: 'Clean Code',             description: 'A handbook of agile software craftsmanship — Robert C. Martin.', priceCents: 3299, imageUrl: 'https://placehold.co/400x400?text=Clean+Code',       stock: 20, categorySlug: 'books' },
-  { name: 'The Pragmatic Programmer',description: '20th Anniversary Edition — Thomas & Hunt.',            priceCents: 3799, imageUrl: 'https://placehold.co/400x400?text=Pragmatic+Prog',    stock: 18, categorySlug: 'books' },
-  { name: 'Designing Data-Intensive Applications', description: 'Martin Kleppmann. O\'Reilly, 2017.',   priceCents: 4999, imageUrl: 'https://placehold.co/400x400?text=DDIA',              stock: 12, categorySlug: 'books' },
-  { name: 'Atomic Habits',          description: 'James Clear. Build good habits, break bad ones.',       priceCents: 1799, imageUrl: 'https://placehold.co/400x400?text=Atomic+Habits',     stock: 30, categorySlug: 'books' },
-  { name: 'Zero to One',            description: 'Peter Thiel on startups and the future.',               priceCents: 1599, imageUrl: 'https://placehold.co/400x400?text=Zero+to+One',       stock: 25, categorySlug: 'books' },
-  // Home & Garden
-  { name: 'Ceramic Plant Pot Set',  description: 'Set of 3 matte ceramic pots with drainage holes.',     priceCents: 2799, imageUrl: 'https://placehold.co/400x400?text=Plant+Pots',        stock: 50, categorySlug: 'home-garden' },
-  { name: 'Bamboo Cutting Board',   description: 'Extra-large end-grain bamboo chopping board.',          priceCents: 3499, imageUrl: 'https://placehold.co/400x400?text=Cutting+Board',     stock: 40, categorySlug: 'home-garden' },
-  { name: 'Aromatherapy Candle Set',description: 'Set of 4 soy wax candles — lavender, vanilla, cedar, citrus.', priceCents: 2499, imageUrl: 'https://placehold.co/400x400?text=Candles', stock: 60, categorySlug: 'home-garden' },
-  { name: 'Stainless Steel Water Bottle', description: '1L insulated bottle, keeps cold 24h / hot 12h.', priceCents: 3299, imageUrl: 'https://placehold.co/400x400?text=Water+Bottle',     stock: 55, categorySlug: 'home-garden' },
-  { name: 'Garden Trowel & Fork Set', description: 'Ergonomic stainless steel hand tools with grip handles.', priceCents: 1999, imageUrl: 'https://placehold.co/400x400?text=Garden+Tools', stock: 35, categorySlug: 'home-garden' },
+  // Kitchen
+  {
+    name: 'Bamboo Cutting Board',
+    description: 'Extra-large end-grain bamboo chopping board. Naturally antibacterial, gentle on knife edges.',
+    priceCents: 2499, imageUrl: 'https://placehold.co/400x400/d2d0a2/3A3A2C?text=Cutting+Board',
+    stock: 40, categorySlug: 'kitchen',
+  },
+  {
+    name: 'Beeswax Food Wraps 3-Pack',
+    description: 'Reusable wraps made from organic cotton, beeswax, and plant oils. Replaces single-use cling film.',
+    priceCents: 1899, imageUrl: 'https://placehold.co/400x400/cfd0a6/3A3A2C?text=Food+Wraps',
+    stock: 60, categorySlug: 'kitchen',
+  },
+  {
+    name: 'Stainless Steel Straw Set',
+    description: '8 reusable straws with cleaning brush — straight and bent, in a linen pouch.',
+    priceCents: 1299, imageUrl: 'https://placehold.co/400x400/b9bc92/3A3A2C?text=Straws',
+    stock: 80, categorySlug: 'kitchen',
+  },
+  {
+    name: 'Silicone Stretch Lids 6-Pack',
+    description: 'Stretch over any bowl or tin to seal. BPA-free silicone, dishwasher-safe.',
+    priceCents: 1999, imageUrl: 'https://placehold.co/400x400/c8cfb6/3A3A2C?text=Stretch+Lids',
+    stock: 55, categorySlug: 'kitchen',
+  },
+  {
+    name: 'Compostable Sponge 3-Pack',
+    description: 'Loofah + cellulose sponges. Home-compostable — no plastic microfibers.',
+    priceCents: 999, imageUrl: 'https://placehold.co/400x400/a9ad7c/3A3A2C?text=Sponges',
+    stock: 90, categorySlug: 'kitchen',
+  },
+  // Bath
+  {
+    name: 'Organic Cotton Towel Set',
+    description: 'Set of 2 bath towels woven from 100% GOTS-certified organic cotton.',
+    priceCents: 4999, imageUrl: 'https://placehold.co/400x400/9fa980/3A3A2C?text=Towels',
+    stock: 30, categorySlug: 'bath',
+  },
+  {
+    name: 'Shampoo Bar — Argan',
+    description: 'Cold-processed solid shampoo with argan oil. Equivalent to ~3 bottles. Sulphate-free.',
+    priceCents: 1499, imageUrl: 'https://placehold.co/400x400/cfd0a6/3A3A2C?text=Shampoo+Bar',
+    stock: 70, categorySlug: 'bath',
+  },
+  {
+    name: 'Bamboo Bath Mat',
+    description: 'Slatted solid bamboo mat, quick-dry and naturally mould-resistant.',
+    priceCents: 3499, imageUrl: 'https://placehold.co/400x400/d2d0a2/3A3A2C?text=Bath+Mat',
+    stock: 25, categorySlug: 'bath',
+  },
+  {
+    name: 'Refillable Glass Soap Dispenser',
+    description: '350ml amber glass pump bottle. Fits any liquid soap — bring your own refill.',
+    priceCents: 2299, imageUrl: 'https://placehold.co/400x400/b9bc92/3A3A2C?text=Dispenser',
+    stock: 45, categorySlug: 'bath',
+  },
+  {
+    name: 'Bamboo Soap Dish',
+    description: 'Slatted bamboo dish keeps bar soap dry between uses, extending its life.',
+    priceCents: 1199, imageUrl: 'https://placehold.co/400x400/c8cfb6/3A3A2C?text=Soap+Dish',
+    stock: 65, categorySlug: 'bath',
+  },
+  // Body
+  {
+    name: 'Organic Lavender Body Oil',
+    description: 'Cold-pressed jojoba and sweet almond oil with lavender essential oil. 100ml.',
+    priceCents: 2899, imageUrl: 'https://placehold.co/400x400/a9ad7c/3A3A2C?text=Body+Oil',
+    stock: 40, categorySlug: 'body',
+  },
+  {
+    name: 'Solid Conditioner Bar',
+    description: 'Concentraded formula with shea butter and coconut oil. Lasts ~80 washes.',
+    priceCents: 1699, imageUrl: 'https://placehold.co/400x400/9fa980/3A3A2C?text=Conditioner',
+    stock: 55, categorySlug: 'body',
+  },
+  {
+    name: 'Bamboo Toothbrush 4-Pack',
+    description: 'FSC-certified bamboo handles with BPA-free nylon bristles. Naturally biodegradable.',
+    priceCents: 1399, imageUrl: 'https://placehold.co/400x400/cfd0a6/3A3A2C?text=Toothbrush',
+    stock: 100, categorySlug: 'body',
+  },
+  {
+    name: 'Natural Mineral Deodorant',
+    description: 'Aluminium-free deodorant stick. Lasts all day — no parabens, no baking soda.',
+    priceCents: 1999, imageUrl: 'https://placehold.co/400x400/d2d0a2/3A3A2C?text=Deodorant',
+    stock: 50, categorySlug: 'body',
+  },
+  {
+    name: 'Organic Cotton Face Pads 20-Pack',
+    description: 'Reusable rounds in a laundry bag. Machine-washable organic cotton.',
+    priceCents: 1199, imageUrl: 'https://placehold.co/400x400/b9bc92/3A3A2C?text=Face+Pads',
+    stock: 75, categorySlug: 'body',
+  },
+  // On the Go
+  {
+    name: 'Insulated Water Bottle 750ml',
+    description: 'Double-walled stainless steel. Keeps cold 24h, hot 12h. Leakproof twist cap.',
+    priceCents: 3499, imageUrl: 'https://placehold.co/400x400/c8cfb6/3A3A2C?text=Water+Bottle',
+    stock: 60, categorySlug: 'on-the-go',
+  },
+  {
+    name: 'Collapsible Coffee Cup',
+    description: '350ml silicone cup folds flat — fits in a pocket. Food-grade, BPA-free.',
+    priceCents: 2799, imageUrl: 'https://placehold.co/400x400/a9ad7c/3A3A2C?text=Coffee+Cup',
+    stock: 45, categorySlug: 'on-the-go',
+  },
+  {
+    name: 'Reusable Produce Bags 5-Pack',
+    description: 'Lightweight mesh bags in 3 sizes. Washable organic cotton. Visible tare weight tag.',
+    priceCents: 1699, imageUrl: 'https://placehold.co/400x400/9fa980/3A3A2C?text=Produce+Bags',
+    stock: 80, categorySlug: 'on-the-go',
+  },
+  {
+    name: 'Bamboo Travel Cutlery Set',
+    description: 'Fork, knife, spoon, chopsticks and straw in a roll-up linen case.',
+    priceCents: 2199, imageUrl: 'https://placehold.co/400x400/cfd0a6/3A3A2C?text=Cutlery',
+    stock: 55, categorySlug: 'on-the-go',
+  },
+  {
+    name: 'Beeswax Lip Balm',
+    description: 'Tinted and natural variants. Organic beeswax, coconut oil, vitamin E. Paper tube.',
+    priceCents: 899, imageUrl: 'https://placehold.co/400x400/d2d0a2/3A3A2C?text=Lip+Balm',
+    stock: 120, categorySlug: 'on-the-go',
+  },
 ];
 
 // ─── Seed ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('Seeding database...\n');
+  console.log('Seeding database…\n');
 
   // Users
   const adminHash    = await argon2.hash(ADMIN_PASS);
@@ -72,39 +175,40 @@ async function main() {
     create: { email: CUSTOMER_EMAIL, passwordHash: customerHash, role: 'CUSTOMER' },
   });
 
-  console.log(`Users created: admin (id=${admin.id}), customer (id=${customer.id})`);
+  console.log(`Users:  admin (id=${admin.id}), customer (id=${customer.id})`);
 
   // Categories
-  const categoryMap: Record<string, number> = {};
+  const catMap: Record<string, number> = {};
   for (const cat of CATEGORIES) {
     const c = await prisma.category.upsert({
       where:  { slug: cat.slug },
       update: {},
       create: cat,
     });
-    categoryMap[cat.slug] = c.id;
+    catMap[cat.slug] = c.id;
   }
-  console.log(`Categories created: ${Object.keys(categoryMap).join(', ')}`);
+  console.log(`Categories: ${Object.keys(catMap).join(', ')}`);
 
-  // Products
-  let productCount = 0;
-  for (const p of PRODUCTS) {
-    const { categorySlug, ...data } = p;
-    await prisma.product.upsert({
-      where:  { id: productCount + 1 },
-      update: { ...data, categoryId: categoryMap[categorySlug] },
-      create: { ...data, categoryId: categoryMap[categorySlug] },
-    });
-    productCount++;
+  // Products — only seed if table is empty (idempotent)
+  const existing = await prisma.product.count();
+  let count = 0;
+  if (existing === 0) {
+    for (const p of PRODUCTS) {
+      const { categorySlug, ...data } = p;
+      await prisma.product.create({ data: { ...data, categoryId: catMap[categorySlug] } });
+      count++;
+    }
+    console.log(`Products: ${count} seeded`);
+  } else {
+    console.log(`Products: skipped (${existing} already exist)`);
   }
-  console.log(`Products seeded: ${productCount}`);
 
-  console.log('\n─────────────────────────────────────');
-  console.log('Seeded credentials');
-  console.log('─────────────────────────────────────');
-  console.log(`Admin    │ ${ADMIN_EMAIL} │ ${ADMIN_PASS}`);
+  console.log('\n──────────────────────────────────────────');
+  console.log('Seeded login credentials');
+  console.log('──────────────────────────────────────────');
+  console.log(`Admin    │ ${ADMIN_EMAIL}    │ ${ADMIN_PASS}`);
   console.log(`Customer │ ${CUSTOMER_EMAIL} │ ${CUSTOMER_PASS}`);
-  console.log('─────────────────────────────────────\n');
+  console.log('──────────────────────────────────────────\n');
 }
 
 main()

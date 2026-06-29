@@ -1,26 +1,44 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand:       #43432B;
+  --color-brand-dark:  #2C2C18;
+  --color-sundry-bg:   #FAF6EC;
+  --color-sundry-surface: #FBF8EF;
+  --color-sundry-header:  #EFEDE1;
+  --color-sundry-text:    #3A3A2C;
+  --color-sundry-muted:   #6B6857;
+  --color-sundry-faint:   #8A8676;
+  --color-sundry-card:    #FFFFFF;
+  --color-sundry-error:   #A82E22;
+  --color-sundry-error-bg: #F6E0DD;
+  --color-sundry-success: #2E7D52;
+  --color-sundry-success-bg: #E3F0E8;
+  --color-sundry-blue:    #8CA0C8;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #FAF6EC;
+  color: #3A3A2C;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+::selection {
+  background: rgba(67,67,43,0.25);
+  color: #3A3A2C;
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+}
+
+button {
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
 }

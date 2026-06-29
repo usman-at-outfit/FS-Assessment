@@ -7,8 +7,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { ApiError } from '@/lib/api-client';
 
 export default function LoginPage() {
-  const { login }       = useAuth();
-  const router          = useRouter();
+  const { login }   = useAuth();
+  const router      = useRouter();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
@@ -28,48 +28,72 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-      <h1 className="mb-6 text-2xl font-semibold text-gray-900">Sign in</h1>
+  const inputStyle: React.CSSProperties = {
+    width: '100%', fontSize: '14px', background: '#FFFFFF',
+    border: '1px solid rgba(58,58,44,0.20)', borderRadius: '6px',
+    padding: '10px 12px', outline: 'none', color: '#3A3A2C',
+    fontFamily: 'inherit',
+  };
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: '13px', fontWeight: 600,
+    color: '#3A3A2C', marginBottom: '6px',
+  };
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+  return (
+    <div style={{ background: '#FFFFFF', border: '1px solid rgba(58,58,44,0.12)', borderRadius: '12px', padding: '32px' }}>
+      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: '26px', color: '#3A3A2C', margin: '0 0 6px' }}>
+        Welcome back
+      </h1>
+      <p style={{ fontSize: '14px', color: '#8A8676', margin: '0 0 24px' }}>Sign in to your Sundry account</p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+          <label style={labelStyle}>Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+            placeholder="you@example.com"
+            style={inputStyle}
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Password</label>
+          <label style={labelStyle}>Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+            style={inputStyle}
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <div style={{ fontSize: '13px', color: '#A82E22', background: '#F6E0DD', border: '1px solid #EFCBC6', borderRadius: '6px', padding: '10px 12px' }}>
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+          style={{
+            width: '100%', fontSize: '15px', fontWeight: 600,
+            color: '#FAF6EC', background: loading ? '#8A8676' : '#43432B',
+            border: 'none', padding: '13px', borderRadius: '6px',
+            cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px',
+          }}
         >
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p style={{ textAlign: 'center', fontSize: '13px', color: '#8A8676', marginTop: '20px' }}>
         No account?{' '}
-        <Link href="/signup" className="font-medium text-gray-900 underline-offset-2 hover:underline">
-          Sign up
+        <Link href="/signup" style={{ fontWeight: 600, color: '#43432B', textDecoration: 'none' }}>
+          Create one
         </Link>
       </p>
     </div>
