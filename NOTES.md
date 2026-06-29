@@ -45,6 +45,10 @@
 | 3   | Planned to downgrade Prisma to v5                                    | Wrong — `npm install prisma@5` silently no-oped (peer dep conflict); Prisma 7 was still active | Version check after install showed 7.8           | Kept Prisma 7 and adapted to its adapter/config pattern                                                                    |
 | 4   | M1: placed `prisma.seed` in `package.json` (Prisma 5/6 pattern)     | Wrong — Prisma 7 reads seed from `prisma.config.ts` `migrations.seed`                         | `npx prisma db seed` said "No seed command configured" | Moved seed to `prisma.config.ts`                                                                                   |
 | 5   | M1: assumed `prisma-client` generator needed for Prisma 7            | Unnecessary — `prisma-client-js` still works in Prisma 7, generates CJS to `@prisma/client`   | Tested both generators                           | Kept `prisma-client-js`; avoids ESM/CJS mismatch in NestJS                                                                |
+| 6   | M2: no fail-fast on missing `JWT_SECRET`                             | Wrong — `JwtModule` silently signs tokens with `undefined` as the secret; any token signed with the string `"undefined"` is accepted | Reviewer subagent flagged it | Added `if (!process.env.JWT_SECRET) throw new Error(...)` in `main.ts` before `NestFactory.create` |
+| 7   | M2: `RolesGuard` returned `false` on role mismatch                   | Suboptimal — returning `false` emits Nest's default 403 body which does not match our `{ statusCode, message, error }` contract | Reviewer subagent flagged it | Changed to `throw new ForbiddenException()` so `AllExceptionsFilter` formats the response |
+| 8   | M2: `LoginDto.password` had no presence validation                   | Wrong — empty string `""` passed DTO validation and triggered a full argon2.verify (slow, minor DoS vector) | Reviewer subagent flagged it | Added `@IsNotEmpty()` |
+| 9   | M2: `jest.spyOn(argon2, 'hash')` in tests                           | Wrong — argon2 is a native addon; Node marks its exports non-configurable, so Jest's spy `Object.defineProperty` throws | Test-writer subagent encountered and fixed it | Use `jest.mock('argon2')` (hoisted before import) instead |
 
 _Narrative:_ The most interesting failure was the Prisma version mismatch. The agent planned
 Prisma 5/6-style `url = env("DATABASE_URL")` in `schema.prisma` and `extends PrismaClient`,
@@ -100,8 +104,9 @@ models are defined.
 
 - **Built fully:** <list>
 - **Mocked / simplified:** <e.g. payment is Stripe test mode / clearly-mocked step; image via URL; etc.>
-- **With more time I would:** <e.g. refresh tokens, optimistic cart UI, richer analytics, file uploads
-  to object storage, rate limiting, e2e tests>
+- **Known security trade-off — JWT in localStorage:** The auth token is stored in `localStorage` (XSS-readable) with a JS-accessible cookie copy for Next.js middleware redirects. `HttpOnly` was intentionally omitted so the client can decode the payload for UI state (user name, role). In production this would move to an `HttpOnly` cookie set by the API `/auth/login` response, with a `/auth/me` endpoint returning user info so the frontend never decodes the token itself.
+- **With more time I would:** refresh tokens, optimistic cart UI, richer analytics, file uploads
+  to object storage, rate limiting, e2e tests
 
 ---
 
