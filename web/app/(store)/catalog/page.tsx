@@ -98,7 +98,7 @@ function CatalogInner() {
     setSearch(''); setCategory(''); setSort('newest'); setMaxPrice(15000); setPage(1);
   }
 
-  const priceLabelCents = maxPrice < 15000 ? `Under ${formatCents(maxPrice)}` : 'Any price';
+  const priceLabelCents = maxPrice < 15000 ? `Up to ${formatCents(maxPrice)}` : 'Any price';
 
   return (
     <div style={{ padding: '28px' }}>
@@ -227,9 +227,9 @@ function CategoryChip({ label, active, onClick }: { label: string; active: boole
   return (
     <button onClick={onClick} style={{
       fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '999px', cursor: 'pointer',
-      background: active ? '#43432B' : '#FFFFFF',
-      color: active ? '#FAF6EC' : '#6B6857',
-      border: active ? 'none' : '1px solid rgba(58,58,44,0.16)',
+      background: active ? '#EFEDE1' : '#FFFFFF',
+      color: active ? '#3A3A2C' : '#6B6857',
+      border: active ? '1px solid #6B6857' : '1px solid rgba(58,58,44,0.16)',
     }}>
       {label}
     </button>
@@ -240,9 +240,9 @@ function PageBtn({ children, onClick, disabled, active }: { children: React.Reac
   return (
     <button onClick={onClick} disabled={disabled} style={{
       fontSize: '13px', fontWeight: 600, minWidth: '38px', padding: '8px 12px', borderRadius: '6px', cursor: disabled ? 'not-allowed' : 'pointer',
-      background: active ? '#43432B' : '#FFFFFF',
-      color: active ? '#FAF6EC' : '#6B6857',
-      border: active ? 'none' : '1px solid rgba(58,58,44,0.16)',
+      background: active ? '#EFEDE1' : '#FFFFFF',
+      color: active ? '#3A3A2C' : '#6B6857',
+      border: active ? '1px solid #6B6857' : '1px solid rgba(58,58,44,0.16)',
       opacity: disabled ? 0.5 : 1,
     }}>
       {children}

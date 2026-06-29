@@ -37,8 +37,8 @@ export function StoreHeader() {
 
   return (
     <header style={{ background: '#EFEDE1', borderBottom: '1px solid rgba(58,58,44,0.12)', position: 'sticky', top: 0, zIndex: 50 }}>
-      {/* Announcement bar */}
-      <div style={{ background: '#3A3A2C', color: '#FAF6EC', textAlign: 'center', fontSize: '12px', padding: '7px 12px', letterSpacing: '0.02em' }}>
+      {/* Announcement bar — light treatment per design */}
+      <div style={{ background: '#EFEDE1', color: '#3A3A2C', textAlign: 'center', fontSize: '12px', padding: '7px 12px', letterSpacing: '0.02em' }}>
         Free shipping over $75 · Plastic-free home essentials, made to last
       </div>
 
