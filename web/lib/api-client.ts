@@ -20,16 +20,25 @@ export interface Category {
   slug: string;
 }
 
+export interface ProductImage {
+  id:        number;
+  productId: number;
+  url:       string;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface Product {
   id:          number;
   name:        string;
   description: string;
   priceCents:  number;
-  imageUrl:    string;
+  imageUrl:    string;   // primary thumbnail (backward-compat)
   stock:       number;
   categoryId:  number;
   createdAt:   string;
   category:    Category;
+  images?:     ProductImage[];  // gallery images (populated by findOne + admin endpoints)
 }
 
 export interface ProductListResponse {
@@ -138,10 +147,25 @@ export const api = {
   },
 
   withToken: (token: string) => ({
-    get:    <T>(path: string)              => request<T>(path, { method: 'GET'    }, token),
+    get:    <T>(path: string)                => request<T>(path, { method: 'GET'    }, token),
     post:   <T>(path: string, body: unknown) => request<T>(path, { method: 'POST',   body: JSON.stringify(body) }, token),
     patch:  <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH',  body: JSON.stringify(body) }, token),
-    delete: <T>(path: string)              => request<T>(path, { method: 'DELETE' }, token),
+    delete: <T>(path: string)                => request<T>(path, { method: 'DELETE' }, token),
+
+    /** Upload files via multipart/form-data (no Content-Type header — browser sets boundary). */
+    upload: async <T>(path: string, formData: FormData): Promise<T> => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg  = Array.isArray(body?.message) ? body.message.join(', ') : body?.message ?? res.statusText;
+        throw new ApiError(res.status, msg, body);
+      }
+      return res.json() as Promise<T>;
+    },
   }),
 };
 

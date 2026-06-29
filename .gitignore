@@ -33,3 +33,7 @@ coverage/
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Uploaded files (tracked directory, excluded contents)
+api/uploads/*
+!api/uploads/.gitkeep

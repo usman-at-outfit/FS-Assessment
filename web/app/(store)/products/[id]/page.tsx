@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { api, formatCents } from '@/lib/api-client';
 import { ProductActions } from '@/components/product-actions';
 import { SuggestionsRow } from '@/components/suggestions-row';
+import { ProductGallery } from '@/components/product-gallery';
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -21,6 +22,9 @@ export default async function ProductPage({ params }: Props) {
   const suggestions = await api.suggestions.get({ exclude: productId }).catch(() => []);
 
   const inStock = product.stock > 0;
+  const galleryUrls = product.images && product.images.length > 0
+    ? product.images.map(img => img.url)
+    : [product.imageUrl];
 
   return (
     <div style={{ padding: '28px', maxWidth: '1100px', margin: '0 auto' }}>
@@ -29,11 +33,8 @@ export default async function ProductPage({ params }: Props) {
       </Link>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'start' }}>
-        {/* Image */}
-        <div style={{ height: '420px', borderRadius: '12px', overflow: 'hidden', background: 'linear-gradient(135deg,#e8e4d8,#d5d0bc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
+        {/* Image / gallery */}
+        <ProductGallery urls={galleryUrls} name={product.name} />
 
         {/* Details */}
         <div>
