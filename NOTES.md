@@ -29,10 +29,12 @@
 - **Project context:** a `CLAUDE.md` holding stack, data model, integrity/security rules, conventions,
   and guardrails (incl. "ask before guessing"). Two purpose-built subagents: `reviewer` (diff review)
   and `test-writer` (tests for the tricky logic).
-- **How tasks were scoped:** one module at a time — scope → instruct → review diff → run → commit.
-  <add detail: how you broke the spec into modules, any reusable prompts>
-- **Context management:** <how you kept context tight — e.g. pointing the agent at CLAUDE.md instead of
-  re-explaining, scoping each prompt to one module, clearing between phases>
+- **How tasks were scoped:** modules M0–M11: scaffold → auth → products catalog → cart → orders
+  → suggestions → design-system align → file uploads + multi-image → admin CRUD → admin orders
+  → admin dashboard → Stripe. Each module got one focused prompt scoped to BE + FE + integration;
+  the reviewer subagent ran on every diff before committing.
+- **Context management:** CLAUDE.md carries the full spec. Between sessions a plan file held
+  outstanding modules. Each module prompt referenced CLAUDE.md rather than restating the spec.
 
 ---
 
@@ -54,6 +56,13 @@
 | 12  | M5: cart loaded outside `$transaction` in checkout | TOCTOU gap — cart quantities could change between the outer read and the transaction start under concurrent requests | Reviewer subagent flagged it | Moved `cart.findUnique` inside the `$transaction` callback |
 | 13  | M5: client-side checkout showed shipping ($5.99) but server totalCents excluded it | UX mismatch — customer sees one total, stored order reflects a different amount | Reviewer subagent flagged it | Added `shippingCents` calculation to server-side checkout; extracted `SHIPPING_CENTS` / `FREE_SHIP_THRESHOLD` to `web/lib/constants.ts` shared by both client display and referenced by server logic |
 | 14  | M3: `pageSize` DTO had no upper bound | Wrong — a client could pass `pageSize=999999` and dump the entire products table | Reviewer subagent flagged it | Added `@Max(100)` to `pageSize` in `QueryProductsDto` |
+| 15  | M-Align: `orders/[id]` computed shipping as `totalCents - subtotal` | Wrong — can be negative if order history predates constants; misleading in admin | Reviewer subagent flagged it | Changed to recompute from `SHIPPING_CENTS / FREE_SHIP_THRESHOLD` constants; admin detail uses `Math.max(0, ...)` guard |
+| 16  | M8: duplicate `background` key in fieldStyle object literal | Wrong — TS error TS1117 on build | TypeScript compiler | Collapsed to single `background: hasErr ? ... : ...` key |
+| 17  | M8: admin guard fired on `user === null` before token hydration | UX bug — valid admin always briefly redirected to /login on page refresh | Reviewer subagent flagged it | Guard now checks `loading` from `useAuth()` and skips redirect while `true` |
+| 18  | M8: save error bound to `errors.name` field | Wrong — 409 / 400 API errors shown under the product-name input as if it were a validation error | Reviewer subagent flagged it | Extracted `ApiError.message`; surfaced as a top-of-form `_form` banner |
+| 19  | M9: `GET /orders/:id` declared before `GET /orders/admin/all` | Wrong — NestJS matched `:id` first, 400-ing all admin order endpoint calls | Reviewer subagent flagged it | Moved admin literal routes above `:id` handler |
+| 20  | M9: `updateStatus` response lacked `user` field; FE replaced order state wholesale | Crash — `order.user.email` threw after every status update on admin detail page | Reviewer subagent flagged it | FE merges patch result with existing state: `{ ...patch, user: prev.user }` |
+| 21  | M11: Stripe `apiVersion: '2025-06-30.basil'` wrong (installed version is dahlia) | TS compile error — type narrowing on literal string version | TypeScript compiler | Changed to `'2026-06-24.dahlia'` (queried from installed stripe types) |
 
 _Narrative:_ The most interesting failure was the Prisma version mismatch. The agent planned
 Prisma 5/6-style `url = env("DATABASE_URL")` in `schema.prisma` and `extends PrismaClient`,
@@ -69,12 +78,16 @@ models are defined.
 
 ## Supervision & verification
 
-- **How I reviewed output rather than accepting it blind:** <diff review per module; ran the app and
-  exercised the path; reviewer subagent pass before commit>
-- **Tests:** <what you tested and why those were the highest-value targets — totals/snapshot, stock,
-  authz, status transitions. Quality over quantity.>
-- **Edge cases handled:** <ordering more than stock; quantity <= 0; cross-user access; invalid status
-  transition; price changed after order placed>
+- **How I reviewed output rather than accepting it blind:** every module diff sent to the `reviewer`
+  subagent before commit. Reviewer focused on auth bypass, money arithmetic, stock atomicity,
+  and API contract. All blockers fixed before the commit landed.
+- **Tests:** test-writer subagent targeted the highest-value logic: order total with price snapshot
+  (not live price), stock decrement under concurrent checkout, ADMIN authz boundary, and status
+  transition state machine. Quality over quantity.
+- **Edge cases handled:** ordering more than stock (409 + which items failed), quantity ≤ 0 (400
+  at DTO layer), cross-user cart/order access (403 from JWT userId — never from request param),
+  invalid status transition (422 with message), price changed after order placed (OrderItem
+  stores a snapshot — `totalCents` is computed inside the `$transaction` from snapshots).
 
 ---
 
@@ -83,9 +96,13 @@ models are defined.
 - **Design agent(s):** Claude Design.
 - **How I directed it:** built a design system first (tokens: color, type scale, spacing; primitives:
   button/input/card/table), then key layouts for storefront and admin, then implemented against it.
-- **Iteration:** <how many passes; what you changed; how you kept storefront + admin consistent>
-- **What's ours vs. building blocks:** <e.g. visual language and layout are ours; headless primitives
-  (Radix/shadcn unstyled) used as un-styled scaffolding only>
+- **Iteration:** design system first (color tokens, type scale, spacing, button/input/card/table
+  primitives in `web/app/globals.css` `@theme {}` block); then key storefront layouts; then admin
+  panel matched to the supplied design file.
+- **What's ours vs. building blocks:** all visual tokens, color palette, and layout are ours
+  (derived from the Sundry brand files). No Radix/shadcn — all components use inline styles
+  directly against the design tokens. Recharts used for the admin bar chart (single real chart
+  per spec §7). Headless Stripe Checkout for the payment redirect flow.
 
 ---
 
@@ -96,7 +113,17 @@ models are defined.
 - **Order-status colors:** Pending is mapped to a neutral color rather than amber, so all five
   order states (pending, processing, shipped, delivered, cancelled) stay visually distinct at a
   glance in the admin order table.
-- **Product image:** <image URL vs upload — state which and why (time trade-off)>.
+- **Multi-image:** `Product.imageUrl` kept as the primary thumbnail for non-breaking backward
+  compatibility with all existing cart/orders/list queries. A new `ProductImage` model (M7) holds
+  the gallery array; admin CRUD syncs both atomically. The first `imageUrl` in the gallery also
+  becomes the primary thumbnail.
+- **File uploads:** stored locally to `api/uploads/` (served as static at `/uploads/`). In
+  production this would be object storage (S3/GCS). Extension derived from `file.mimetype`
+  (not `originalname`) to prevent extension-spoofing.
+- **Stripe Hosted Checkout:** stock validated and decremented only on confirmed payment (inside
+  the `$transaction` in `confirmStripeCheckout`). The rare sell-out-between-session-and-confirm
+  window returns 409 with `errors[]`. In production: reserve stock on session creation or auto-
+  refund via webhook. No webhook needed for local development with test keys.
 - **Open-ended "relevant suggestions":** interpreted as **category-affinity** — in-stock products from
   categories the user has ordered or has in cart, ranked by units sold, excluding items already owned/in
   cart; **cold-start fallback** to global bestsellers for new users. Rejected for time: collaborative
@@ -107,11 +134,19 @@ models are defined.
 
 ## Trade-offs & scope
 
-- **Built fully:** <list>
-- **Mocked / simplified:** <e.g. payment is Stripe test mode / clearly-mocked step; image via URL; etc.>
+- **Built fully:** storefront (catalog + search/filter/sort/pagination, product detail + gallery,
+  cart, mock-card checkout, order history + detail, auth, suggestions); admin panel (products CRUD
+  with multi-image upload, orders list + detail + lifecycle actions, dashboard stats + Recharts
+  chart + top-products bars); Stripe Hosted Checkout redirect flow; file uploads.
+- **Mocked / simplified:** mock-card checkout (Card tab) never hits a real payment gateway; Stripe
+  tab requires a real `sk_test_*` key but scaffolding + flow is complete. Image storage is local
+  disk (not object storage). No email dispatch on order confirmation (logged as "on its way").
+  Admin pagination is server-side but admin products page uses a high `pageSize=500` cap (no
+  server-side pagination controls in the table).
 - **Known security trade-off — JWT in localStorage:** The auth token is stored in `localStorage` (XSS-readable) with a JS-accessible cookie copy for Next.js middleware redirects. `HttpOnly` was intentionally omitted so the client can decode the payload for UI state (user name, role). In production this would move to an `HttpOnly` cookie set by the API `/auth/login` response, with a `/auth/me` endpoint returning user info so the frontend never decodes the token itself.
-- **With more time I would:** refresh tokens, optimistic cart UI, richer analytics, file uploads
-  to object storage, rate limiting, e2e tests
+- **With more time I would:** refresh tokens (currently access token only), optimistic cart UI,
+  richer analytics (revenue over time, category breakdown), file uploads to S3/GCS, rate limiting,
+  e2e Playwright tests, admin product search/pagination, email confirmation via SendGrid/Resend.
 
 ---
 
