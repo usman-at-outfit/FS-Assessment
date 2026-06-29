@@ -1,5 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
+// ─── Error class ──────────────────────────────────────────────────────────────
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -9,6 +11,67 @@ export class ApiError extends Error {
     super(message);
   }
 }
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface Category {
+  id:   number;
+  name: string;
+  slug: string;
+}
+
+export interface Product {
+  id:          number;
+  name:        string;
+  description: string;
+  priceCents:  number;
+  imageUrl:    string;
+  stock:       number;
+  categoryId:  number;
+  createdAt:   string;
+  category:    Category;
+}
+
+export interface ProductListResponse {
+  items:    Product[];
+  total:    number;
+  page:     number;
+  pageSize: number;
+}
+
+export interface CartItem {
+  id:        number;
+  cartId:    number;
+  productId: number;
+  quantity:  number;
+  product:   Product;
+}
+
+export interface CartResponse {
+  id:     number;
+  userId: number;
+  items:  CartItem[];
+}
+
+export interface OrderItem {
+  id:            number;
+  orderId:       number;
+  productId:     number;
+  unitPriceCents: number;
+  quantity:      number;
+  product:       { id: number; name: string; imageUrl: string };
+}
+
+export interface Order {
+  id:         number;
+  userId:     number;
+  status:     'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  totalCents: number;
+  createdAt:  string;
+  items:      OrderItem[];
+}
+
+// ─── Request helper ───────────────────────────────────────────────────────────
 
 async function request<T>(
   path: string,
@@ -31,8 +94,11 @@ async function request<T>(
     throw new ApiError(res.status, msg, body);
   }
 
+  if (res.status === 204) return undefined as unknown as T;
   return res.json() as Promise<T>;
 }
+
+// ─── API surface ──────────────────────────────────────────────────────────────
 
 export const api = {
   auth: {
@@ -48,14 +114,39 @@ export const api = {
       }),
   },
 
-  // Authenticated helper — pass token explicitly so we avoid
-  // synchronous localStorage reads during SSR.
+  products: {
+    list: (params: Record<string, string | number | undefined> = {}) => {
+      const qs = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== '') qs.set(k, String(v));
+      }
+      const query = qs.toString() ? `?${qs.toString()}` : '';
+      return request<ProductListResponse>(`/products${query}`);
+    },
+    get: (id: number) => request<Product>(`/products/${id}`),
+  },
+
+  categories: {
+    list: () => request<Category[]>('/categories'),
+  },
+
+  suggestions: {
+    get: (opts?: { token?: string; exclude?: number }) => {
+      const qs = opts?.exclude ? `?exclude=${opts.exclude}` : '';
+      return request<Product[]>(`/suggestions${qs}`, {}, opts?.token);
+    },
+  },
+
   withToken: (token: string) => ({
-    get:  <T>(path: string) => request<T>(path, { method: 'GET' }, token),
-    post: <T>(path: string, body: unknown) =>
-      request<T>(path, { method: 'POST', body: JSON.stringify(body) }, token),
-    patch: <T>(path: string, body: unknown) =>
-      request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }, token),
-    delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }, token),
+    get:    <T>(path: string)              => request<T>(path, { method: 'GET'    }, token),
+    post:   <T>(path: string, body: unknown) => request<T>(path, { method: 'POST',   body: JSON.stringify(body) }, token),
+    patch:  <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH',  body: JSON.stringify(body) }, token),
+    delete: <T>(path: string)              => request<T>(path, { method: 'DELETE' }, token),
   }),
 };
+
+// ─── Formatting helpers ───────────────────────────────────────────────────────
+
+export function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
