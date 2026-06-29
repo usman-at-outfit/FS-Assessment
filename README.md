@@ -24,7 +24,8 @@ docker compose ps             # db should show "healthy"
 cd api
 cp .env.example .env          # matches root .env creds by default
 npm install
-npx prisma generate
+npx prisma migrate dev        # apply schema + run prisma generate
+npx prisma db seed            # seed users, categories, products
 npm run start:dev
 ```
 
@@ -42,4 +43,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
-> Seeded credentials will be added here in module M1 once auth + seed are in place.
+## Seeded credentials
+
+| Role     | Email                | Password      |
+|----------|----------------------|---------------|
+| Admin    | admin@ecomm.dev      | Admin1234!    |
+| Customer | customer@ecomm.dev   | Customer1234! |
+
+Seed creates 2 users, 4 categories (Electronics, Clothing, Books, Home & Garden), and 20 products with stock.

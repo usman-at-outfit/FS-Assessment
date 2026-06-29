@@ -36,13 +36,15 @@
 
 ---
 
-## Where the agent helped, and where it failed  ← (high-value section — keep a running log)
+## Where the agent helped, and where it failed ← (high-value section — keep a running log)
 
-| # | What the agent did | Right / Wrong | How I caught it | Fix |
-|---|--------------------|---------------|-----------------|-----|
-| 1 | Planned `PrismaService extends PrismaClient` with `$connect()` in M0 | Wrong — Prisma 5 can't `generate` without models; Prisma 7 broke `url` in schema | Test run failed; error surfaced during execution | Switched to adapter-based `PrismaClient` from `@prisma/client` stub + `PrismaPg` adapter; deferred `prisma generate` to M1 |
-| 2 | Specified `version: "3.9"` in docker-compose.yml | Wrong (obsolete, causes warning) | `docker compose up` printed warning | Removed `version` key |
-| 3 | Planned to downgrade Prisma to v5 | Wrong — `npm install prisma@5` silently no-oped (peer dep conflict); Prisma 7 was still active | Version check after install showed 7.8 | Kept Prisma 7 and adapted to its adapter/config pattern |
+| #   | What the agent did                                                   | Right / Wrong                                                                                  | How I caught it                                  | Fix                                                                                                                        |
+| --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Planned `PrismaService extends PrismaClient` with `$connect()` in M0 | Wrong — Prisma 5 can't `generate` without models; Prisma 7 broke `url` in schema               | Test run failed; error surfaced during execution | Switched to adapter-based `PrismaClient` from `@prisma/client` stub + `PrismaPg` adapter; deferred `prisma generate` to M1 |
+| 2   | Specified `version: "3.9"` in docker-compose.yml                     | Wrong (obsolete, causes warning)                                                               | `docker compose up` printed warning              | Removed `version` key                                                                                                      |
+| 3   | Planned to downgrade Prisma to v5                                    | Wrong — `npm install prisma@5` silently no-oped (peer dep conflict); Prisma 7 was still active | Version check after install showed 7.8           | Kept Prisma 7 and adapted to its adapter/config pattern                                                                    |
+| 4   | M1: placed `prisma.seed` in `package.json` (Prisma 5/6 pattern)     | Wrong — Prisma 7 reads seed from `prisma.config.ts` `migrations.seed`                         | `npx prisma db seed` said "No seed command configured" | Moved seed to `prisma.config.ts`                                                                                   |
+| 5   | M1: assumed `prisma-client` generator needed for Prisma 7            | Unnecessary — `prisma-client-js` still works in Prisma 7, generates CJS to `@prisma/client`   | Tested both generators                           | Kept `prisma-client-js`; avoids ESM/CJS mismatch in NestJS                                                                |
 
 _Narrative:_ The most interesting failure was the Prisma version mismatch. The agent planned
 Prisma 5/6-style `url = env("DATABASE_URL")` in `schema.prisma` and `extends PrismaClient`,
@@ -82,8 +84,9 @@ models are defined.
 
 - **Money:** stored as integer cents end-to-end to avoid float rounding; formatted to currency only at
   the UI edge.
-- **Order status model:** PENDING → PROCESSING → SHIPPED → DELIVERED, plus CANCELLED from
-  PENDING/PROCESSING; no transitions out of DELIVERED.
+- **Order-status colors:** Pending is mapped to a neutral color rather than amber, so all five
+  order states (pending, processing, shipped, delivered, cancelled) stay visually distinct at a
+  glance in the admin order table.
 - **Product image:** <image URL vs upload — state which and why (time trade-off)>.
 - **Open-ended "relevant suggestions":** interpreted as **category-affinity** — in-stock products from
   categories the user has ordered or has in cart, ranked by units sold, excluding items already owned/in
@@ -109,4 +112,5 @@ docker compose up -d
 cd api && npm install && npx prisma migrate dev && npm run seed && npm run start:dev
 cd web && npm install && npm run dev
 ```
+
 Seeded logins: admin `<email/pass>`, customer `<email/pass>`.
