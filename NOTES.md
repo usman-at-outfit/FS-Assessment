@@ -7,10 +7,19 @@
 
 ## Stack & why
 
-- **Backend:** NestJS (monolith) + Prisma + PostgreSQL.
-- **Frontend:** Next.js (App Router) + React.
+- **Backend:** NestJS (monolith) + Prisma 7 + PostgreSQL 16.
+- **Frontend:** Next.js 16 (App Router) + React + Tailwind CSS.
 - **Auth:** JWT access tokens, `argon2` password hashing, role-based guard.
-- _Why this stack:_ <one or two lines — productivity, matches the suggested stack, etc.>
+- **Prisma version note:** Prisma 7.8 was resolved by npm (latest). Prisma 7 introduced two
+  breaking changes relevant here: (a) `url` is no longer set in `schema.prisma` — it lives in
+  `prisma.config.ts`; (b) the default generator (`prisma-client`) outputs ESM TypeScript to
+  `generated/prisma/` instead of CJS to `node_modules/.prisma/client`. The generated client
+  uses `import.meta.url` (ESM-only). For NestJS CJS compatibility we use the adapter-based
+  runtime: `PrismaClient` from `@prisma/client` + `PrismaPg` adapter from `@prisma/adapter-pg`.
+  This gives us a working `$connect()` / `$disconnect()` lifecycle without needing any models
+  to be defined yet (the stub in `.prisma/client/index.js` has an empty data model but a
+  working engine). Models and `prisma generate` happen in M1 — `prisma-client` generator in
+  schema.prisma is configured but not yet run.
 
 ---
 
@@ -31,12 +40,19 @@
 
 | # | What the agent did | Right / Wrong | How I caught it | Fix |
 |---|--------------------|---------------|-----------------|-----|
-| 1 | <e.g. order total computed from live product price> | Wrong (subtle) | reviewer flagged missing snapshot | switched to OrderItem.unitPriceCents |
-| 2 | | | | |
-| 3 | | | | |
+| 1 | Planned `PrismaService extends PrismaClient` with `$connect()` in M0 | Wrong — Prisma 5 can't `generate` without models; Prisma 7 broke `url` in schema | Test run failed; error surfaced during execution | Switched to adapter-based `PrismaClient` from `@prisma/client` stub + `PrismaPg` adapter; deferred `prisma generate` to M1 |
+| 2 | Specified `version: "3.9"` in docker-compose.yml | Wrong (obsolete, causes warning) | `docker compose up` printed warning | Removed `version` key |
+| 3 | Planned to downgrade Prisma to v5 | Wrong — `npm install prisma@5` silently no-oped (peer dep conflict); Prisma 7 was still active | Version check after install showed 7.8 | Kept Prisma 7 and adapted to its adapter/config pattern |
 
-_Narrative:_ <a few sentences on the most interesting mistake — what made it subtle, why the agent
-went there, and how your review process surfaced it.>
+_Narrative:_ The most interesting failure was the Prisma version mismatch. The agent planned
+Prisma 5/6-style `url = env("DATABASE_URL")` in `schema.prisma` and `extends PrismaClient`,
+but npm resolved Prisma 7 (latest), which removed `url` from the schema file entirely and moved
+connection config to `prisma.config.ts`. The Prisma 7 generated client also uses `import.meta.url`
+(ESM-only), incompatible with NestJS's default CJS runtime. Rather than fighting both changes,
+the adapter pattern (`PrismaPg`) was used: it bypasses the generated engine entirely and connects
+via `pg.Pool`, which is CJS-safe. The stub `.prisma/client/index.js` in Prisma 7 has an empty
+data model and a working `getPrismaClient()` factory, so `$connect()` succeeds even before any
+models are defined.
 
 ---
 

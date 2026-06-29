@@ -1,0 +1,12 @@
+// Prisma schema — M0: generator + datasource only, no models yet.
+// Connection URL lives in prisma.config.ts (Prisma 7 convention).
+// Models will be added in M1. Run `npx prisma generate` once the first model exists.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
