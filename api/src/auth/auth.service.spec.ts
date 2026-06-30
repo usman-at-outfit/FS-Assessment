@@ -29,16 +29,16 @@ const EXISTING_USER = {
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: { user: { findUnique: jest.Mock; create: jest.Mock } };
+  let prisma: { user: { findUnique: jest.Mock; create: jest.Mock; update: jest.Mock } };
 
   beforeEach(async () => {
-    prisma = { user: { findUnique: jest.fn(), create: jest.fn() } };
+    prisma = { user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: prisma },
-        { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue('signed-token') } },
+        { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue('signed-token'), verify: jest.fn() } },
       ],
     }).compile();
 
@@ -57,7 +57,7 @@ describe('AuthService', () => {
 
       const result = await service.signup({ email: 'new@example.com', password: 'password123' });
 
-      expect(result).toEqual({ accessToken: 'signed-token' });
+      expect(result).toMatchObject({ accessToken: 'signed-token', refreshToken: 'signed-token' });
       // hash was derived and stored — never the raw password
       expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ passwordHash: 'hashed' }) }),
@@ -94,7 +94,7 @@ describe('AuthService', () => {
 
       const result = await service.login({ email: EXISTING_USER.email, password: 'correct' });
 
-      expect(result).toEqual({ accessToken: 'signed-token' });
+      expect(result).toMatchObject({ accessToken: 'signed-token', refreshToken: 'signed-token' });
     });
 
     it('throws UnauthorizedException for a wrong password', async () => {
