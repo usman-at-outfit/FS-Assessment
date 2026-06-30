@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const router          = useRouter();
 
   const [step,     setStep]     = useState<Step>('info');
-  const [payTab,   setPayTab]   = useState<PayTab>('card');
+  const [payTab,   setPayTab]   = useState<PayTab>('stripe');
   const [shipInfo, setShipInfo] = useState<ShipInfo>({ name: '', email: user?.email ?? '', addr: '', city: '', zip: '' });
   const [payInfo,  setPayInfo]  = useState<PayInfo>({ card: '', exp: '', cvc: '', name: '' });
   const [shipErrs, setShipErrs] = useState<Partial<ShipInfo>>({});
@@ -205,6 +205,23 @@ export default function CheckoutPage() {
               <button onClick={() => validateShipping() && setStep('payment')} style={{ width: '100%', fontSize: '15px', fontWeight: 600, color: '#FAF6EC', background: '#43432B', border: 'none', padding: '13px', borderRadius: '6px', cursor: 'pointer', marginTop: '20px' }}>
                 Continue to payment
               </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '16px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(58,58,44,0.12)' }} />
+                <span style={{ fontSize: '12px', color: '#A39E8C', fontFamily: "'Space Mono', monospace", letterSpacing: '0.08em' }}>OR</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(58,58,44,0.12)' }} />
+              </div>
+
+              <button
+                onClick={startStripeCheckout}
+                disabled={stripeRedirecting}
+                style={{ width: '100%', fontSize: '15px', fontWeight: 700, color: '#FFFFFF', background: stripeRedirecting ? '#7c74e0' : '#635BFF', border: 'none', padding: '13px', borderRadius: '6px', cursor: stripeRedirecting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                {stripeRedirecting ? 'Redirecting to Stripe…' : `Pay with Stripe — ${formatCents(total)} →`}
+              </button>
+              <div style={{ textAlign: 'center', fontSize: '11px', color: '#A39E8C', fontFamily: "'Space Mono', monospace", letterSpacing: '0.08em', marginTop: '8px' }}>
+                POWERED BY STRIPE · SSL SECURED
+              </div>
             </>
           )}
 

@@ -1,6 +1,7 @@
 import {
   Injectable, NotFoundException, ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryProductsDto } from './dto/query-products.dto';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -67,6 +68,40 @@ export class ProductsService {
 
   async findCategories() {
     return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
+  }
+
+  async createCategory(name: string, slug: string, imageUrl?: string) {
+    try {
+      return await this.prisma.category.create({ data: { name, slug, imageUrl } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('A category with that name or slug already exists');
+      }
+      throw err;
+    }
+  }
+
+  async updateCategory(id: number, data: { name?: string; slug?: string; imageUrl?: string }) {
+    try {
+      return await this.prisma.category.update({ where: { id }, data });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === 'P2025') throw new NotFoundException(`Category #${id} not found`);
+        if (err.code === 'P2002') throw new ConflictException('A category with that name or slug already exists');
+      }
+      throw err;
+    }
+  }
+
+  async updateCategoryImage(id: number, imageUrl: string) {
+    try {
+      return await this.prisma.category.update({ where: { id }, data: { imageUrl } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        throw new NotFoundException(`Category #${id} not found`);
+      }
+      throw err;
+    }
   }
 
   // ─── Admin write operations ──────────────────────────────────────────────────

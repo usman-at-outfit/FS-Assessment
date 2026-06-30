@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { api, Product, formatCents, pickThumb } from '@/lib/api-client';
+import { api, Category, Product, formatCents, pickThumb } from '@/lib/api-client';
 import { HomeAddToCart } from '@/components/home-add-to-cart';
 import { HeroSlider } from '@/components/hero-slider';
+import { TypewriterTitle } from '@/components/typewriter-title';
 
 async function getBestsellers(): Promise<Product[]> {
   try {
@@ -21,14 +22,25 @@ async function getBannerImages(): Promise<string[]> {
   }
 }
 
-const CATEGORIES = [
-  { slug: 'kitchen',   label: 'Kitchen',    bg: 'linear-gradient(135deg,#cfd0a6,#a9ad7c)' },
-  { slug: 'bath',      label: 'Bath',       bg: 'linear-gradient(135deg,#c8cfb6,#9fa980)' },
-  { slug: 'on-the-go', label: 'On the Go',  bg: 'linear-gradient(135deg,#d2d0a2,#b0b079)' },
+async function getCategories(): Promise<Category[]> {
+  try {
+    return await api.categories.list();
+  } catch {
+    return [];
+  }
+}
+
+const FALLBACK_BG = [
+  'linear-gradient(135deg,#cfd0a6,#a9ad7c)',
+  'linear-gradient(135deg,#c8cfb6,#9fa980)',
+  'linear-gradient(135deg,#d2d0a2,#b0b079)',
+  'linear-gradient(135deg,#c9cba3,#9ba370)',
+  'linear-gradient(135deg,#d1cba0,#b2b07a)',
+  'linear-gradient(135deg,#ccc9a8,#9ba47e)',
 ];
 
 export default async function HomePage() {
-  const [bestsellers, bannerImages] = await Promise.all([getBestsellers(), getBannerImages()]);
+  const [bestsellers, bannerImages, categories] = await Promise.all([getBestsellers(), getBannerImages(), getCategories()]);
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -36,7 +48,8 @@ export default async function HomePage() {
       <div style={{
         position: 'relative', overflow: 'hidden',
         background: 'linear-gradient(120deg,#d8d3bf,#b9bc92)',
-        height: 'clamp(380px,46vw,520px)',
+        height: 'calc(100vh - 90px)',
+        minHeight: '500px',
         display: 'flex', alignItems: 'center',
       }}>
         {/* Banner slider (behind overlay) */}
@@ -50,13 +63,11 @@ export default async function HomePage() {
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', letterSpacing: '0.22em', color: '#EADFC8' }}>
             PLASTIC-FREE · MADE TO LAST
           </div>
-          <h1 style={{
+          <TypewriterTitle style={{
             fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500,
             fontSize: 'clamp(28px,5.2vw,54px)', lineHeight: 1.04,
             color: '#FFFFFF', maxWidth: '600px', margin: 0,
-          }}>
-            Everyday essentials,<br />kinder to the planet
-          </h1>
+          }} />
           <p style={{ fontSize: 'clamp(14px,1.6vw,17px)', color: 'rgba(255,255,255,.88)', maxWidth: '420px', margin: 0, lineHeight: 1.55 }}>
             Sustainable home goods designed to replace single-use plastic — beautifully made, built to last.
           </p>
@@ -83,7 +94,7 @@ export default async function HomePage() {
           <Link href="/catalog" style={{ fontSize: '13px', fontWeight: 600, color: '#43432B', textDecoration: 'none' }}>View all →</Link>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {CATEGORIES.map(cat => (
+          {categories.map((cat, i) => (
             <Link
               key={cat.slug}
               href={`/catalog?category=${cat.slug}`}
@@ -93,14 +104,27 @@ export default async function HomePage() {
                 boxShadow: '0 1px 3px rgba(0,0,0,.08)',
               }}
             >
-              <div style={{ width: '100%', height: '210px', background: cat.bg }} />
+              <div style={{
+                width: '100%', height: '210px',
+                background: cat.imageUrl ? undefined : FALLBACK_BG[i % FALLBACK_BG.length],
+                position: 'relative',
+              }}>
+                {cat.imageUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={cat.imageUrl}
+                    alt={cat.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                )}
+              </div>
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'linear-gradient(0deg, rgba(28,28,18,.60), rgba(28,28,18,0) 58%)',
                 display: 'flex', alignItems: 'flex-end', padding: '16px',
               }}>
                 <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', fontWeight: 500, color: '#FFFFFF' }}>
-                  {cat.label}
+                  {cat.name}
                 </span>
               </div>
             </Link>

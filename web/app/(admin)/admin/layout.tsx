@@ -46,9 +46,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Page title from route
   const PAGE_TITLES: Record<string, string> = {
-    '/admin':          'Dashboard',
-    '/admin/products': 'Products',
-    '/admin/orders':   'Orders',
+    '/admin':              'Dashboard',
+    '/admin/products':     'Products',
+    '/admin/categories':   'Categories',
+    '/admin/orders':       'Orders',
   };
   const pageTitle =
     Object.entries(PAGE_TITLES).find(([k]) => k !== '/admin' ? pathname.startsWith(k) : pathname === k)?.[1]
@@ -79,9 +80,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <nav style={{ padding: '0 10px', display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-          <NavItem href="/admin"          icon="⊞" label="Dashboard" />
-          <NavItem href="/admin/products" icon="⬚" label="Products" />
-          <NavItem href="/admin/orders"   icon="≡" label="Orders" badge={attentionCount} />
+          <NavItem href="/admin"              icon="⊞" label="Dashboard" />
+          <NavItem href="/admin/products"     icon="⬚" label="Products" />
+          <NavItem href="/admin/categories"   icon="◫" label="Categories" />
+          <NavItem href="/admin/orders"       icon="≡" label="Orders" badge={attentionCount} />
         </nav>
 
         {/* Footer */}

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { api, formatCents } from '@/lib/api-client';
+import { api, formatCents, pickThumb } from '@/lib/api-client';
 import { ProductActions } from '@/components/product-actions';
 import { SuggestionsRow } from '@/components/suggestions-row';
 import { ProductGallery } from '@/components/product-gallery';
@@ -22,8 +22,9 @@ export default async function ProductPage({ params }: Props) {
   const suggestions = await api.suggestions.get({ exclude: productId }).catch(() => []);
 
   const inStock = product.stock > 0;
+  const primaryUrl = pickThumb(product);
   const galleryUrls = product.images && product.images.length > 0
-    ? product.images.map(img => img.url)
+    ? [primaryUrl, ...product.images.map(img => img.url).filter(url => url !== primaryUrl)]
     : [product.imageUrl];
 
   return (

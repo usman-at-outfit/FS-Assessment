@@ -4,11 +4,9 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname as pathExtname, join } from 'path';
+import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
 
 const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
 
@@ -34,8 +32,7 @@ const storage = diskStorage({
 });
 
 @Controller('uploads')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
+@UseGuards(JwtAuthGuard)
 export class UploadsController {
   /**
    * POST /uploads

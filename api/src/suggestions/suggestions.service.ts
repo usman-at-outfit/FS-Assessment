@@ -66,7 +66,7 @@ export class SuggestionsService {
       if (rows.length > 0) {
         return this.prisma.product.findMany({
           where: { id: { in: rows.map(r => r.id) } },
-          include: { category: { select: { id: true, name: true, slug: true } } },
+          include: { category: { select: { id: true, name: true, slug: true } }, images: { orderBy: { sortOrder: 'asc' as const } } },
         });
       }
     }
@@ -94,7 +94,7 @@ export class SuggestionsService {
 
     return this.prisma.product.findMany({
       where: { id: { in: rows.map(r => r.id) } },
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: { category: { select: { id: true, name: true, slug: true } }, images: { orderBy: { sortOrder: 'asc' as const } } },
     });
   }
 }

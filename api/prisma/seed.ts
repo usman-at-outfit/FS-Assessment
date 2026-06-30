@@ -18,10 +18,10 @@ const CUSTOMER_PASS  = 'Customer1234!';
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { name: 'Kitchen',    slug: 'kitchen'    },
-  { name: 'Bath',       slug: 'bath'       },
-  { name: 'Body',       slug: 'body'       },
-  { name: 'On the Go',  slug: 'on-the-go'  },
+  { name: 'Kitchen',   slug: 'kitchen',   imageUrl: 'https://placehold.co/800x400/cfd0a6/3A3A2C?text=Kitchen'   },
+  { name: 'Bath',      slug: 'bath',      imageUrl: 'https://placehold.co/800x400/c8cfb6/3A3A2C?text=Bath'      },
+  { name: 'Body',      slug: 'body',      imageUrl: 'https://placehold.co/800x400/d2d0a2/3A3A2C?text=Body'      },
+  { name: 'On the Go', slug: 'on-the-go', imageUrl: 'https://placehold.co/800x400/b9bc92/3A3A2C?text=On+the+Go' },
 ];
 
 // ─── Products ─────────────────────────────────────────────────────────────────

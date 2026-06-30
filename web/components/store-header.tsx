@@ -20,8 +20,9 @@ export function StoreHeader() {
   const [q,           setQ]           = useState('');
   const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
   const [uploading,   setUploading]   = useState(false);
-  const acctRef   = useRef<HTMLDivElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const acctRef      = useRef<HTMLDivElement>(null);
+  const fileInput    = useRef<HTMLInputElement>(null);
+  const searchTouched = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -54,12 +55,21 @@ export function StoreHeader() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Debounced auto-search: navigate 1 s after the user stops typing.
+  // searchTouched guards against firing on mount when q is still ''.
+  useEffect(() => {
+    if (!searchTouched.current) return;
+    const id = setTimeout(() => {
+      const term = q.trim();
+      router.push(term ? `/catalog?search=${encodeURIComponent(term)}` : '/catalog');
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [q, router]);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (q.trim()) {
-      router.push(`/catalog?search=${encodeURIComponent(q.trim())}`);
-      setQ('');
-    }
+    const term = q.trim();
+    router.push(term ? `/catalog?search=${encodeURIComponent(term)}` : '/catalog');
   }
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -134,15 +144,23 @@ export function StoreHeader() {
           <form onSubmit={handleSearch} style={{ position: 'relative' }}>
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => { searchTouched.current = true; setQ(e.target.value); }}
               placeholder="Search the shop"
               style={{
                 width: '180px', fontSize: '13px', color: '#3A3A2C',
                 background: '#FFFFFF', border: '1px solid rgba(58,58,44,0.16)',
-                borderRadius: '999px', padding: '7px 12px 7px 30px', outline: 'none',
+                borderRadius: '999px', padding: '7px 34px 7px 12px', outline: 'none',
               }}
             />
-            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#8A8676', pointerEvents: 'none' }}>⌕</span>
+            <button
+              type="submit"
+              style={{
+                position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                fontSize: '15px', color: '#8A8676', background: 'none', border: 'none',
+                cursor: 'pointer', padding: '0 2px', lineHeight: 1,
+              }}
+              aria-label="Search"
+            >⌕</button>
           </form>
 
           {/* Auth */}
@@ -222,23 +240,21 @@ export function StoreHeader() {
                       </div>
                     </div>
 
-                    {/* Profile photo upload — admin only */}
-                    {user.role === 'ADMIN' && (
-                      <button
-                        onClick={() => { fileInput.current?.click(); }}
-                        disabled={uploading}
-                        style={{
-                          width: '100%', textAlign: 'left', fontSize: '12px', fontWeight: 500,
-                          padding: '6px 10px', borderRadius: '5px', cursor: uploading ? 'not-allowed' : 'pointer',
-                          color: '#43432B', background: '#FAF6EC',
-                          border: '1px solid rgba(58,58,44,0.14)', opacity: uploading ? 0.6 : 1,
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                        }}
-                      >
-                        <span style={{ fontSize: '14px' }}>📷</span>
-                        {uploading ? 'Uploading…' : avatarUrl ? 'Update profile photo' : 'Upload profile photo'}
-                      </button>
-                    )}
+                    {/* Profile photo upload — all logged-in users */}
+                    <button
+                      onClick={() => { fileInput.current?.click(); }}
+                      disabled={uploading}
+                      style={{
+                        width: '100%', textAlign: 'left', fontSize: '12px', fontWeight: 500,
+                        padding: '6px 10px', borderRadius: '5px', cursor: uploading ? 'not-allowed' : 'pointer',
+                        color: '#43432B', background: '#FAF6EC',
+                        border: '1px solid rgba(58,58,44,0.14)', opacity: uploading ? 0.6 : 1,
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                      }}
+                    >
+                      <span style={{ fontSize: '14px' }}>📷</span>
+                      {uploading ? 'Uploading…' : avatarUrl ? 'Update profile photo' : 'Upload profile photo'}
+                    </button>
                   </div>
 
                   {user.role === 'CUSTOMER' && (

@@ -5,6 +5,76 @@ import { useAuth } from '@/contexts/auth-context';
 import { api, ApiError, Product, Category, formatCents, pickThumb } from '@/lib/api-client';
 import { ImageUploader } from '@/components/image-uploader';
 
+// ─── Category image picker ────────────────────────────────────────────────────
+
+function CategoryImagePicker({
+  token,
+  categories,
+  categoryId,
+  onUpdated,
+}: {
+  token: string;
+  categories: Category[];
+  categoryId: string;
+  onUpdated: (catId: number, imageUrl: string) => void;
+}) {
+  const cat = categories.find(c => c.id === parseInt(categoryId));
+  const [preview, setPreview] = useState<string | null>(cat?.imageUrl ?? null);
+  const [saving,  setSaving]  = useState(false);
+  const [msg,     setMsg]     = useState('');
+
+  useEffect(() => {
+    setPreview(cat?.imageUrl ?? null);
+    setMsg('');
+  }, [categoryId, cat?.imageUrl]);
+
+  async function handleUpload(urls: string[]) {
+    if (!cat) return;
+    if (urls.length === 0) {
+      // User hit ✕ — clear local preview only; DB retains old image until replaced
+      setPreview(null);
+      setMsg('');
+      return;
+    }
+    const newUrl = urls[urls.length - 1];
+    setSaving(true);
+    setMsg('');
+    try {
+      await api.categories.updateImage(cat.id, newUrl, token);
+      setPreview(newUrl);
+      onUpdated(cat.id, newUrl);
+      setMsg('Category image saved');
+    } catch {
+      setMsg('Failed to save category image');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!cat) return null;
+
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#6B6857', marginBottom: '6px', letterSpacing: '0.02em' }}>
+        Category image <span style={{ fontWeight: 400, color: '#A39E8C' }}>(optional — shown on homepage)</span>
+      </label>
+      {preview && (
+        <div style={{ marginBottom: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(58,58,44,0.12)', height: '90px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+      <ImageUploader token={token} value={preview ? [preview] : []} onChange={handleUpload} max={1} />
+      {saving && <div style={{ fontSize: '12px', color: '#8A8676', marginTop: '4px' }}>Saving…</div>}
+      {!saving && msg && (
+        <div style={{ fontSize: '12px', marginTop: '4px', color: msg.startsWith('Failed') ? '#A82E22' : '#1F5C3B' }}>
+          {msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Stock badge ──────────────────────────────────────────────────────────────
 
 function StockBadge({ stock }: { stock: number }) {
@@ -47,9 +117,10 @@ interface DrawerProps {
   categories: Category[];
   onClose: () => void;
   onSaved: (msg: string) => void;
+  onCategoryImageUpdated: (catId: number, imageUrl: string) => void;
 }
 
-function ProductDrawer({ token, open, editing, categories, onClose, onSaved }: DrawerProps) {
+function ProductDrawer({ token, open, editing, categories, onClose, onSaved, onCategoryImageUpdated }: DrawerProps) {
   const [form,   setForm]   = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
@@ -169,6 +240,15 @@ function ProductDrawer({ token, open, editing, categories, onClose, onSaved }: D
               ))}
             </select>
           </Field>
+
+          {form.categoryId && (
+            <CategoryImagePicker
+              token={token}
+              categories={categories}
+              categoryId={form.categoryId}
+              onUpdated={onCategoryImageUpdated}
+            />
+          )}
 
           <Field label="Images" error={undefined}>
             <ImageUploader token={token} value={form.imageUrls} onChange={urls => setForm(f => ({ ...f, imageUrls: urls }))} max={8} />
@@ -393,6 +473,10 @@ export default function AdminProductsPage() {
     load().catch(() => setToast('Saved, but refresh failed — reload the page.'));
   }
 
+  function handleCategoryImageUpdated(catId: number, imageUrl: string) {
+    setCategories(prev => prev.map(c => c.id === catId ? { ...c, imageUrl } : c));
+  }
+
   async function confirmDelete() {
     if (!deleting || !token) return;
     setDelInFlight(true);
@@ -543,6 +627,7 @@ export default function AdminProductsPage() {
           categories={categories}
           onClose={closeDrawer}
           onSaved={handleSaved}
+          onCategoryImageUpdated={handleCategoryImageUpdated}
         />
       )}
 

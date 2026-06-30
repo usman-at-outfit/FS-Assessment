@@ -15,9 +15,10 @@ export class ApiError extends Error {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Category {
-  id:   number;
-  name: string;
-  slug: string;
+  id:       number;
+  name:     string;
+  slug:     string;
+  imageUrl?: string | null;
 }
 
 export interface ProductImage {
@@ -230,6 +231,12 @@ export const api = {
 
   categories: {
     list: () => request<Category[]>('/categories'),
+    create: (data: { name: string; slug?: string; imageUrl?: string }, token: string) =>
+      request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }, token),
+    update: (id: number, data: { name?: string; slug?: string; imageUrl?: string }, token: string) =>
+      request<Category>(`/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, token),
+    updateImage: (id: number, imageUrl: string, token: string) =>
+      request<Category>(`/categories/${id}/image`, { method: 'PATCH', body: JSON.stringify({ imageUrl }) }, token),
   },
 
   suggestions: {
